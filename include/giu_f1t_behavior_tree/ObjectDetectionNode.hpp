@@ -2,9 +2,8 @@
 #pragma once
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
-#include <your_msgs/msg/detections.hpp> // replace with your actual message
+#include <std_msgs/msg/bool.hpp>
 
-// TODO
 class ObjectDetectionNode : public BT::SyncActionNode
 {
 public:
@@ -12,34 +11,38 @@ public:
         : SyncActionNode(name, config)
     {
         node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-        detect_sub_ = node_->create_subscription<your_msgs::msg::Detections>(
-            "<YOUR_DETECTIONS_TOPIC>", 10,
-            std::bind(&ObjectDetectionNode::detectionCallback, this, std::placeholders::_1));
+
+        node_->declare_parameter<std::string>("object_detection_topic", "/obj_detected");
+
+        node_->get_parameter("object_detection_topic", object_detection_topic_);
+
+        detect_sub_ = node_->create_subscription<std_msgs::msg::Bool>("/tmp" + object_detection_topic_, 10,
+                                                                                  std::bind(&ObjectDetectionNode::detectionCallback, this, std::placeholders::_1));
+        detect_pub_ = node_->create_publisher<std_msgs::msg::Bool>(object_detection_topic_, 10);
     }
 
-    static BT::PortsList providedPorts()
-    {
-        return {BT::OutputPort<std::vector<std::string>>("objects")};
-    }
+    static BT::PortsList providedPorts() { return {}; }
 
     BT::NodeStatus tick() override
     {
-        // TODO: convert latest_detections_ into vector<string>
-        setOutput("objects", latest_objects_);
+        auto msg = std_msgs::msg::Bool();
+        msg.data = latest_objects_;
+        detect_pub_->publish(msg);
+        if (!msg.data) {
+            return BT::NodeStatus::FAILURE; 
+        }
         return BT::NodeStatus::SUCCESS;
     }
 
 private:
-    void detectionCallback(const your_msgs::msg::Detections::SharedPtr msg)
+    void detectionCallback(const std_msgs::msg::Bool::SharedPtr msg)
     {
-        latest_objects_.clear();
-        for (const auto &det : msg->objects)
-        {
-            latest_objects_.push_back(det.label);
-        }
+        latest_objects_ = msg->data;
     }
 
     rclcpp::Node::SharedPtr node_;
-    rclcpp::Subscription<your_msgs::msg::Detections>::SharedPtr detect_sub_;
-    std::vector<std::string> latest_objects_;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detect_sub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr detect_pub_;
+    bool latest_objects_;
+    std::string object_detection_topic_;
 };

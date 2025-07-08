@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root BTCPP_format="4">
+  <BehaviorTree ID="Pure-Gap Minimal Tree">
+    <Fallback>
+      <Sequence>
+        <ObjectDetectionNode objects=""/>
+        <GapFollowerNode/>
+      </Sequence>
+      <PurePursuitNode/>
+    </Fallback>
+  </BehaviorTree>
+
+  <!-- Description of Node Models (used by Groot) -->
+  <TreeNodesModel>
+    <Action ID="GapFollowerNode"
+            editable="true"/>
+    <Action ID="ObjectDetectionNode"
+            editable="true">
+      <output_port name="objects"/>
+    </Action>
+    <Action ID="PurePursuitNode"
+            editable="true"/>
+  </TreeNodesModel>
+
+</root>

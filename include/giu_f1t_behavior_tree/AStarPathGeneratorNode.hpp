@@ -3,8 +3,9 @@
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/string.hpp>
 
-// TODO
 class AStarPathGeneratorNode : public BT::SyncActionNode
 {
 public:
@@ -12,26 +13,32 @@ public:
         : SyncActionNode(name, config)
     {
         node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-        path_pub_ = node_->create_publisher<nav_msgs::msg::Path>(
-            "<YOUR_PLANNED_PATH_TOPIC>", 10);
+      
+        decision_pub_ = node_->create_publisher<std_msgs::msg::String>(
+            "/path_chooser", 10
+        );
+        toggle_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
+            "/gap_follower_toggle", 10);
     }
 
-    static BT::PortsList providedPorts()
-    {
-        return {BT::InputPort<std::vector<std::string>>("objects")};
-    }
+    static BT::PortsList providedPorts() { return {}; }
 
     BT::NodeStatus tick() override
     {
-        auto objects = getInput<std::vector<std::string>>("objects");
-        // TODO: compute nav_msgs::msg::Path using A*
-        nav_msgs::msg::Path path_msg;
-        // fill path_msg.poses...
-        path_pub_->publish(path_msg);
+        std_msgs::msg::String decision_msg;
+        decision_msg.data = "astar_path";
+        decision_pub_->publish(decision_msg);
+        std_msgs::msg::Bool toggle_msg;
+        toggle_msg.data = false; // Disable the gap follower
+        toggle_pub_->publish(toggle_msg);
+        
         return BT::NodeStatus::SUCCESS;
     }
 
+
 private:
+
     rclcpp::Node::SharedPtr node_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr decision_pub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr toggle_pub_;
 };

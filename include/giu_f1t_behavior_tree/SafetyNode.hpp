@@ -4,6 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/range.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
 
 class SafetyNode : public BT::SyncActionNode
 {
@@ -12,36 +13,46 @@ public:
       : SyncActionNode(name, config)
   {
     node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-    range_sub_ = node_->create_subscription<sensor_msgs::msg::Range>(
-        "<YOUR_RANGE_SENSOR_TOPIC>", 10,
-        std::bind(&SafetyNode::rangeCallback, this, std::placeholders::_1));
-    safety_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
-        "<YOUR_SAFETY_OVERRIDE_TOPIC>", 10);
+
+    node_->declare_parameter("safety_node_topic", "/tmp/safety");
+    node_->declare_parameter("cmd_vel_topic", "/ackermann_cmd");
+
+    node_->get_parameter("safety_node_topic", safety_node_topic_);
+    node_->get_parameter("cmd_vel_topic", cmd_vel_topic_);
+
+    safety_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
+        safety_node_topic_, 10,
+        std::bind(&SafetyNode::safetyCallback, this, std::placeholders::_1));
+    cmd_pub_ = node_->create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(cmd_vel_topic_, 10);
   }
 
   static BT::PortsList providedPorts() { return {}; }
 
   BT::NodeStatus tick() override
   {
-    // TODO: check range_; if too close, override
-    std_msgs::msg::Bool msg;
-    msg.data = (range_.range < MIN_SAFE_DISTANCE);
-    safety_pub_->publish(msg);
 
-    return msg.data
-               ? BT::NodeStatus::SUCCESS
-               : BT::NodeStatus::FAILURE;
+    if(range_){
+      ackermann_msgs::msg::AckermannDriveStamped stop;
+      stop.drive.speed = 0.0;
+      stop.drive.steering_angle = 0.0;
+      stop.drive.acceleration = 0.0;
+
+      cmd_pub_->publish(stop);
+      return BT::NodeStatus::FAILURE;
+    }
+    return BT::NodeStatus::SUCCESS;
   }
 
 private:
-  void rangeCallback(const sensor_msgs::msg::Range::SharedPtr msg)
+  void safetyCallback(const std_msgs::msg::Bool::SharedPtr msg)
   {
-    range_ = *msg;
+    range_ = msg->data;
   }
 
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr range_sub_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr safety_pub_;
-  sensor_msgs::msg::Range range_;
-  static constexpr double MIN_SAFE_DISTANCE = 0.5;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safety_sub_;
+  rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr cmd_pub_;
+  std::string safety_node_topic_; 
+  std::string cmd_vel_topic_;
+  bool range_;
 };

@@ -14,7 +14,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='giu_f1t_behavior_tree',
-            executable='bt_node',
+            executable='bt_main',
             name='behavior_tree',
             output='screen',
             parameters=[config]
