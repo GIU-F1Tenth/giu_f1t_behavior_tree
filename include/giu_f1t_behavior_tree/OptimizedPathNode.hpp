@@ -1,40 +1,54 @@
-// OptimizedPathNode.hpp
+/**
+ * @file OptimizedPathNode.hpp
+ * @brief Behavior tree node for activating optimized path following
+ * @author Fam Shihata
+ * @date 2025
+ */
+
 #pragma once
+
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/string.hpp>
 
+/**
+ * @class OptimizedPathNode
+ * @brief Behavior tree action node that activates optimized path following mode
+ *
+ * This node publishes a decision message to switch the path planner to use
+ * an optimized/pre-computed path (e.g., CSV race path) and disables the gap follower.
+ */
 class OptimizedPathNode : public BT::SyncActionNode
 {
 public:
-    OptimizedPathNode(const std::string &name, const BT::NodeConfiguration &config)
-        : SyncActionNode(name, config)
-    {
-        node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
+    /**
+     * @brief Constructor for OptimizedPathNode
+     * @param name Node name
+     * @param config Node configuration containing blackboard reference
+     */
+    OptimizedPathNode(const std::string &name, const BT::NodeConfiguration &config);
 
-        decision_pub_ = node_->create_publisher<std_msgs::msg::String>(
-            "/path_chooser", 10
-        );
-        toggle_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
-            "/gap_follower_toggle", 10);
-    }
-
+    /**
+     * @brief Provides the list of ports for this node
+     * @return Empty port list (no input/output ports)
+     */
     static BT::PortsList providedPorts() { return {}; }
 
-    BT::NodeStatus tick() override
-    {
-        std_msgs::msg::String decision_msg;
-        decision_msg.data = "csv_race_path";
-        decision_pub_->publish(decision_msg);
-        std_msgs::msg::Bool toggle_msg;
-        toggle_msg.data = false; // Disable the gap follower
-        toggle_pub_->publish(toggle_msg);
-        return BT::NodeStatus::SUCCESS;
-    }
+    /**
+     * @brief Main execution function called during behavior tree tick
+     * @return Always returns SUCCESS after publishing decision messages
+     */
+    BT::NodeStatus tick() override;
 
 private:
-
     rclcpp::Node::SharedPtr node_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr decision_pub_;
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr toggle_pub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gap_follower_toggle_pub_;
+
+    // Parameters loaded from config
+    std::string path_chooser_topic_;
+    std::string gap_follower_toggle_topic_;
+    std::string optimized_decision_message_;
+    int queue_size_;
 };

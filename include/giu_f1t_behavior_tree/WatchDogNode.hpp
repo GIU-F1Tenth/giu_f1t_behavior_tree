@@ -1,41 +1,59 @@
-// WatchDogNode.hpp
+/**
+ * @file WatchDogNode.hpp
+ * @brief Behavior tree node for critical system monitoring
+ * @author Fam Shihata
+ * @date 2025
+ */
+
 #pragma once
+
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 
+/**
+ * @class WatchDogNode
+ * @brief Behavior tree condition node that monitors critical system status
+ *
+ * This node monitors critical system health and returns FAILURE when
+ * critical timeouts or failures are detected, triggering emergency procedures.
+ */
 class WatchDogNode : public BT::SyncActionNode
 {
 public:
-    WatchDogNode(const std::string &name, const BT::NodeConfiguration &config)
-        : SyncActionNode(name, config)
-    {
-        node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
+    /**
+     * @brief Constructor for WatchDogNode
+     * @param name Node name
+     * @param config Node configuration containing blackboard reference
+     */
+    WatchDogNode(const std::string &name, const BT::NodeConfiguration &config);
 
-        node_->declare_parameter<std::string>("watchdog_topic", "/tmp/watchdog/critical");
-
-        node_->get_parameter("watchdog_topic", watchdog_topic_);
-
-        watchdog_sub_ = node_->create_subscription<std_msgs::msg::Bool>(
-            watchdog_topic_, 10,
-            std::bind(&WatchDogNode::watchdogCallback, this, std::placeholders::_1));
-    }
-
+    /**
+     * @brief Provides the list of ports for this node
+     * @return Empty port list (no input/output ports)
+     */
     static BT::PortsList providedPorts() { return {}; }
 
-    BT::NodeStatus tick() override
-    {
-        return timed_out_ ? BT::NodeStatus::FAILURE : BT::NodeStatus::SUCCESS;
-    }
+    /**
+     * @brief Main execution function called during behavior tree tick
+     * @return SUCCESS if systems healthy, FAILURE if critical timeout detected
+     */
+    BT::NodeStatus tick() override;
 
 private:
-    void watchdogCallback(const std_msgs::msg::Bool::SharedPtr msg)
-    {
-        timed_out_ = msg->data;
-    }
+    /**
+     * @brief Callback for critical watchdog status messages
+     * @param msg Watchdog status message (true = timeout/failure detected)
+     */
+    void watchdogCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
     rclcpp::Node::SharedPtr node_;
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr watchdog_sub_;
+
+    // Parameters loaded from config
     std::string watchdog_topic_;
-    bool timed_out_ = true;
+    int queue_size_;
+
+    // State variables
+    bool critical_timeout_detected_;
 };
