@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>giu_f1t_behavior_tree</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>1.0.0</version>
+  <description>A ROS 2 package implementing behavior trees for F1Tenth autonomous racing, providing modular decision-making and control logic for racing scenarios.</description>
   <maintainer email="fam@awadlouis.com">Fam Shihata</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
