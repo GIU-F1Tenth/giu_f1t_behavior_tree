@@ -1,42 +1,54 @@
-// OptimizedPathNode.hpp
+/**
+ * @file OptimizedPathNode.hpp
+ * @brief Behavior tree node for activating optimized path following
+ * @author Fam Shihata
+ * @date 2025
+ */
+
 #pragma once
+
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
-#include <nav_msgs/msg/path.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/string.hpp>
 
+/**
+ * @class OptimizedPathNode
+ * @brief Behavior tree action node that activates optimized path following mode
+ *
+ * This node publishes a decision message to switch the path planner to use
+ * an optimized/pre-computed path (e.g., CSV race path) and disables the gap follower.
+ */
 class OptimizedPathNode : public BT::SyncActionNode
 {
 public:
-    OptimizedPathNode(const std::string &name, const BT::NodeConfiguration &config)
-        : SyncActionNode(name, config)
-    {
-        node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-        path_sub_ = node_->create_subscription<nav_msgs::msg::Path>(
-            "<YOUR_PLANNED_PATH_TOPIC>", 10,
-            std::bind(&OptimizedPathNode::pathCallback, this, std::placeholders::_1));
-        opt_pub_ = node_->create_publisher<nav_msgs::msg::Path>(
-            "<YOUR_OPTIMIZED_PATH_TOPIC>", 10);
-    }
+    /**
+     * @brief Constructor for OptimizedPathNode
+     * @param name Node name
+     * @param config Node configuration containing blackboard reference
+     */
+    OptimizedPathNode(const std::string &name, const BT::NodeConfiguration &config);
 
+    /**
+     * @brief Provides the list of ports for this node
+     * @return Empty port list (no input/output ports)
+     */
     static BT::PortsList providedPorts() { return {}; }
 
-    BT::NodeStatus tick() override
-    {
-        // TODO: optimize latest_path_
-        nav_msgs::msg::Path opt_path = latest_path_;
-        // e.g., smooth or shorten...
-        opt_pub_->publish(opt_path);
-        return BT::NodeStatus::SUCCESS;
-    }
+    /**
+     * @brief Main execution function called during behavior tree tick
+     * @return Always returns SUCCESS after publishing decision messages
+     */
+    BT::NodeStatus tick() override;
 
 private:
-    void pathCallback(const nav_msgs::msg::Path::SharedPtr msg)
-    {
-        latest_path_ = *msg;
-    }
-
     rclcpp::Node::SharedPtr node_;
-    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr opt_pub_;
-    nav_msgs::msg::Path latest_path_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr decision_pub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gap_follower_toggle_pub_;
+
+    // Parameters loaded from config
+    std::string path_chooser_topic_;
+    std::string gap_follower_toggle_topic_;
+    std::string optimized_decision_message_;
+    int queue_size_;
 };

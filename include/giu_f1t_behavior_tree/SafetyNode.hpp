@@ -1,47 +1,62 @@
-// SafetyNode.hpp
+/**
+ * @file SafetyNode.hpp
+ * @brief Behavior tree node for safety monitoring and emergency stopping
+ * @author Fam Shihata
+ * @date 2025
+ */
+
 #pragma once
+
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/range.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
 
+/**
+ * @class SafetyNode
+ * @brief Behavior tree condition node that monitors safety status
+ *
+ * This node continuously monitors safety conditions and can trigger
+ * emergency stops when unsafe conditions are detected.
+ */
 class SafetyNode : public BT::SyncActionNode
 {
 public:
-  SafetyNode(const std::string &name, const BT::NodeConfiguration &config)
-      : SyncActionNode(name, config)
-  {
-    node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-    range_sub_ = node_->create_subscription<sensor_msgs::msg::Range>(
-        "<YOUR_RANGE_SENSOR_TOPIC>", 10,
-        std::bind(&SafetyNode::rangeCallback, this, std::placeholders::_1));
-    safety_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
-        "<YOUR_SAFETY_OVERRIDE_TOPIC>", 10);
-  }
+  /**
+   * @brief Constructor for SafetyNode
+   * @param name Node name
+   * @param config Node configuration containing blackboard reference
+   */
+  SafetyNode(const std::string &name, const BT::NodeConfiguration &config);
 
+  /**
+   * @brief Provides the list of ports for this node
+   * @return Empty port list (no input/output ports)
+   */
   static BT::PortsList providedPorts() { return {}; }
 
-  BT::NodeStatus tick() override
-  {
-    // TODO: check range_; if too close, override
-    std_msgs::msg::Bool msg;
-    msg.data = (range_.range < MIN_SAFE_DISTANCE);
-    safety_pub_->publish(msg);
-
-    return msg.data
-               ? BT::NodeStatus::SUCCESS
-               : BT::NodeStatus::FAILURE;
-  }
+  /**
+   * @brief Main execution function called during behavior tree tick
+   * @return SUCCESS if safe, FAILURE if unsafe conditions detected
+   */
+  BT::NodeStatus tick() override;
 
 private:
-  void rangeCallback(const sensor_msgs::msg::Range::SharedPtr msg)
-  {
-    range_ = *msg;
-  }
+  /**
+   * @brief Callback for safety status messages
+   * @param msg Safety status message
+   */
+  void safetyCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<sensor_msgs::msg::Range>::SharedPtr range_sub_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr safety_pub_;
-  sensor_msgs::msg::Range range_;
-  static constexpr double MIN_SAFE_DISTANCE = 0.5;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr safety_sub_;
+  rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr cmd_pub_;
+
+  // Parameters loaded from config
+  std::string safety_topic_;
+  std::string cmd_topic_;
+  int queue_size_;
+
+  // State variables
+  bool unsafe_condition_detected_;
 };

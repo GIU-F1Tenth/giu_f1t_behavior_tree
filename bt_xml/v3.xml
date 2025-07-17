@@ -8,23 +8,31 @@
         <EmergencyStopNode/>
       </Fallback>
       <SafetyNode/>
-      <Sequence>
-        <ObjectDetectionNode />
-        <Fallback>
-          <AStarPathGeneratorNode />
-          <OptimizedPathNode/>
-        </Fallback>
-        <Fallback>
-          <PurePursuitNode/>
-          <GapFollowerNode/>
-        </Fallback>
-      </Sequence>
+      <Fallback>
+        <Sequence>
+          <CameraWatchDogNode/>
+          <Sequence>
+            <ObjectDetectionNode/>
+            <Fallback>
+              <AStarPathGeneratorNode/>
+              <OptimizedPathNode/>
+            </Fallback>
+            <Fallback>
+              <PurePursuitNode/>
+              <GapFollowerNode/>
+            </Fallback>
+          </Sequence>
+        </Sequence>
+        <GapFollowerNode/>
+      </Fallback>
     </Sequence>
   </BehaviorTree>
 
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
     <Action ID="AStarPathGeneratorNode"
+            editable="true"/>
+    <Action ID="CameraWatchDogNode"
             editable="true"/>
     <Action ID="EmergencyStopNode"
             editable="true"/>
@@ -41,4 +49,5 @@
     <Action ID="WatchDogNode"
             editable="true"/>
   </TreeNodesModel>
+
 </root>
