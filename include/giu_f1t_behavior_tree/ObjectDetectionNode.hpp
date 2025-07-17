@@ -1,45 +1,61 @@
-// ObjectDetectionNode.hpp
+/**
+ * @file ObjectDetectionNode.hpp
+ * @brief Behavior tree node for object detection monitoring
+ * @author Fam Shihata
+ * @date 2025
+ */
+
 #pragma once
+
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
-#include <your_msgs/msg/detections.hpp> // replace with your actual message
+#include <std_msgs/msg/bool.hpp>
 
-// TODO
+/**
+ * @class ObjectDetectionNode
+ * @brief Behavior tree condition node that monitors object detection status
+ *
+ * This node subscribes to object detection results and returns SUCCESS
+ * when objects are detected, FAILURE otherwise.
+ */
 class ObjectDetectionNode : public BT::SyncActionNode
 {
 public:
-    ObjectDetectionNode(const std::string &name, const BT::NodeConfiguration &config)
-        : SyncActionNode(name, config)
-    {
-        node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-        detect_sub_ = node_->create_subscription<your_msgs::msg::Detections>(
-            "<YOUR_DETECTIONS_TOPIC>", 10,
-            std::bind(&ObjectDetectionNode::detectionCallback, this, std::placeholders::_1));
-    }
+    /**
+     * @brief Constructor for ObjectDetectionNode
+     * @param name Node name
+     * @param config Node configuration containing blackboard reference
+     */
+    ObjectDetectionNode(const std::string &name, const BT::NodeConfiguration &config);
 
-    static BT::PortsList providedPorts()
-    {
-        return {BT::OutputPort<std::vector<std::string>>("objects")};
-    }
+    /**
+     * @brief Provides the list of ports for this node
+     * @return Empty port list (no input/output ports)
+     */
+    static BT::PortsList providedPorts() { return {}; }
 
-    BT::NodeStatus tick() override
-    {
-        // TODO: convert latest_detections_ into vector<string>
-        setOutput("objects", latest_objects_);
-        return BT::NodeStatus::SUCCESS;
-    }
+    /**
+     * @brief Main execution function called during behavior tree tick
+     * @return SUCCESS if objects detected, FAILURE otherwise
+     */
+    BT::NodeStatus tick() override;
 
 private:
-    void detectionCallback(const your_msgs::msg::Detections::SharedPtr msg)
-    {
-        latest_objects_.clear();
-        for (const auto &det : msg->objects)
-        {
-            latest_objects_.push_back(det.label);
-        }
-    }
+    /**
+     * @brief Callback for object detection status messages
+     * @param msg Object detection status message
+     */
+    void detectionCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
     rclcpp::Node::SharedPtr node_;
-    rclcpp::Subscription<your_msgs::msg::Detections>::SharedPtr detect_sub_;
-    std::vector<std::string> latest_objects_;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr detection_sub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr detection_pub_;
+
+    // Parameters loaded from config
+    std::string detection_input_topic_;
+    std::string detection_output_topic_;
+    int queue_size_;
+
+    // State variables
+    bool objects_detected_;
 };

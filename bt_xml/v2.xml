@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="2.0" encoding="UTF-8"?>
 <root BTCPP_format="4"
       main_tree_to_execute="Main tree">
   <BehaviorTree ID="Main tree">
@@ -8,10 +8,14 @@
         <EmergencyStopNode/>
       </Fallback>
       <SafetyNode/>
+      <Fallback>
+        <CameraWatchDogNode/>
+        <GapFollowerNode/>
+      </Fallback>
       <Sequence>
-        <ObjectDetectionNode />
+        <ObjectDetectionNode/>
         <Fallback>
-          <AStarPathGeneratorNode />
+          <AStarPathGeneratorNode/>
           <OptimizedPathNode/>
         </Fallback>
         <Fallback>
@@ -25,6 +29,8 @@
   <!-- Description of Node Models (used by Groot) -->
   <TreeNodesModel>
     <Action ID="AStarPathGeneratorNode"
+            editable="true"/>
+    <Action ID="CameraWatchDogNode"
             editable="true"/>
     <Action ID="EmergencyStopNode"
             editable="true"/>
@@ -41,4 +47,5 @@
     <Action ID="WatchDogNode"
             editable="true"/>
   </TreeNodesModel>
+
 </root>

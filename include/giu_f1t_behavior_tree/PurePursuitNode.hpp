@@ -1,43 +1,63 @@
-// PurePursuitNode.hpp
+/**
+ * @file PurePursuitNode.hpp
+ * @brief Behavior tree node for pure pursuit path following
+ * @author Fam Shihata
+ * @date 2025
+ */
+
 #pragma once
+
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
-#include <nav_msgs/msg/path.hpp>
-#include <geometry_msgs/msg/twist.hpp>
+#include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
 
+/**
+ * @class PurePursuitNode
+ * @brief Behavior tree action node that handles pure pursuit control commands
+ *
+ * This node subscribes to pure pursuit control commands and forwards them
+ * to the vehicle's command topic for execution.
+ */
 class PurePursuitNode : public BT::SyncActionNode
 {
 public:
-    PurePursuitNode(const std::string &name, const BT::NodeConfiguration &config)
-        : SyncActionNode(name, config)
-    {
-        node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-        path_sub_ = node_->create_subscription<nav_msgs::msg::Path>(
-            "<YOUR_OPTIMIZED_PATH_TOPIC>", 10,
-            std::bind(&PurePursuitNode::pathCallback, this, std::placeholders::_1));
-        cmd_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>(
-            "<YOUR_CMD_VEL_TOPIC>", 10);
-    }
+    /**
+     * @brief Constructor for PurePursuitNode
+     * @param name Node name
+     * @param config Node configuration containing blackboard reference
+     */
+    PurePursuitNode(const std::string &name, const BT::NodeConfiguration &config);
 
+    /**
+     * @brief Provides the list of ports for this node
+     * @return Empty port list (no input/output ports)
+     */
     static BT::PortsList providedPorts() { return {}; }
 
-    BT::NodeStatus tick() override
-    {
-        // TODO: run pure pursuit on latest_path_
-        geometry_msgs::msg::Twist cmd;
-        // fill cmd.linear/angular
-        cmd_pub_->publish(cmd);
-        return BT::NodeStatus::SUCCESS;
-    }
+    /**
+     * @brief Main execution function called during behavior tree tick
+     * @return Always returns SUCCESS after publishing command
+     */
+    BT::NodeStatus tick() override;
 
 private:
-    void pathCallback(const nav_msgs::msg::Path::SharedPtr msg)
-    {
-        latest_path_ = *msg;
-    }
+    /**
+     * @brief Callback for pure pursuit control commands
+     * @param msg Ackermann drive command message
+     */
+    void controlCallback(const ackermann_msgs::msg::AckermannDriveStamped::SharedPtr msg);
 
     rclcpp::Node::SharedPtr node_;
-    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
-    nav_msgs::msg::Path latest_path_;
+    rclcpp::Subscription<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr control_sub_;
+    rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr cmd_pub_;
+
+    // Parameters loaded from config
+    std::string pure_pursuit_topic_;
+    std::string cmd_topic_;
+    std::string default_frame_id_;
+    int queue_size_;
+
+    // State variables
+    ackermann_msgs::msg::AckermannDriveStamped latest_command_;
+    bool command_received_;
 };

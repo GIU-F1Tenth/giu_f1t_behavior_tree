@@ -1,57 +1,50 @@
-// GapFollowerNode.hpp
+/**
+ * @file GapFollowerNode.hpp
+ * @brief Behavior tree node for activating gap following behavior
+ * @author Fam Shihata
+ * @date 2025
+ */
+
 #pragma once
+
 #include <behaviortree_cpp_v3/action_node.h>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/laser_scan.hpp>
-#include <geometry_msgs/msg/twist.hpp>
+#include <std_msgs/msg/bool.hpp>
 
-// TODO
+/**
+ * @class GapFollowerNode
+ * @brief Behavior tree action node that activates gap following mode
+ *
+ * This node enables the gap follower algorithm, which allows the vehicle
+ * to navigate through gaps in obstacles using reactive control.
+ */
 class GapFollowerNode : public BT::SyncActionNode
 {
 public:
-    GapFollowerNode(const std::string &name, const BT::NodeConfiguration &config)
-        : SyncActionNode(name, config)
-    {
-        node_->declare_parameter<std::string>("gap_follower_topic", "/gap_follower");
-        node_->declare_parameter<std::string>("cmd_vel_topic", "/ackermann_cmd");
+    /**
+     * @brief Constructor for GapFollowerNode
+     * @param name Node name
+     * @param config Node configuration containing blackboard reference
+     */
+    GapFollowerNode(const std::string &name, const BT::NodeConfiguration &config);
 
-        node_->get_parameter("gap_follower_topic", gap_follower_topic_);
-        node_->get_parameter("cmd_vel_topic", cmd_vel_topic_);
-
-        node_ = config.blackboard->template get<rclcpp::Node::SharedPtr>("node");
-        // scan_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
-        //     "<YOUR_LASER_SCAN_TOPIC>", 10,
-        //     std::bind(&GapFollowerNode::scanCallback, this, std::placeholders::_1));
-        gap_follower_sub_ = node_->create_subscription<sensor_msgs::msg::LaserScan>(
-            gap_follower_topic_, 10, gap_follower_callback);
-        cmd_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>(
-            cmd_vel_topic_, 10);
-    }
-
+    /**
+     * @brief Provides the list of ports for this node
+     * @return Empty port list (no input/output ports)
+     */
     static BT::PortsList providedPorts() { return {}; }
 
-    BT::NodeStatus tick() override
-    {
-        // TODO: implement gap-follower logic using latest_scan_
-        geometry_msgs::msg::Twist cmd;
-        cmd_pub_->publish(cmd);
-        return BT::NodeStatus::SUCCESS;
-    }
+    /**
+     * @brief Main execution function called during behavior tree tick
+     * @return Always returns SUCCESS after enabling gap follower
+     */
+    BT::NodeStatus tick() override;
 
 private:
-    //     void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg)
-    //     {
-    //         latest_scan_ = *msg;
-    //     }
+    rclcpp::Node::SharedPtr node_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr gap_follower_toggle_pub_;
 
-    //     rclcpp::Node::SharedPtr node_;
-    //     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
-
-    void gapFollowerCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg)
-    {
-    }
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
-    std::string gap_follower_topic_;
-    std : string cmd_vel_topic_;
-    // sensor_msgs::msg::LaserScan latest_scan_;
+    // Parameters loaded from config
+    std::string gap_follower_toggle_topic_;
+    int queue_size_;
 };

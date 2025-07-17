@@ -1,0 +1,103 @@
+# F1Tenth Behavior Tree Configuration
+# This file contains all configurable parameters for the behavior tree nodes
+# Modify these values to customize the behavior of your F1Tenth autonomous vehicle
+
+bt_main:
+    ros__parameters:
+        # ===========================================
+        # BEHAVIOR TREE CORE CONFIGURATION
+        # ===========================================
+
+        # Path to the behavior tree XML file (relative to package share directory)
+        behavior_tree_xml_path: "bt_xml/production_tree.xml"
+
+        # Behavior tree execution frequency in Hz
+        tick_rate_hz: 25.0
+
+        # Enable Groot logging for behavior tree visualization and debugging
+        enable_groot_logging: false
+
+        # Fallback XML path for development environments (absolute path)
+        fallback_xml_path: "/home/ubuntu/giu_f1tenth_ws/software/src/planning/giu_f1t_behavior_tree/bt_xml/v7.xml"
+
+        # ===========================================
+        # ROS TOPIC CONFIGURATION
+        # ===========================================
+        topics:
+            # Vehicle Control Topics
+            ackermann_cmd: "/ackermann_cmd" # Main vehicle command output
+            emergency_ackermann_cmd: "/ackermann_cmd" # Emergency stop command output
+            pure_pursuit_cmd: "/tmp/pp_ackermann_cmd" # Pure pursuit controller input
+
+            # Path Planning and Decision Topics
+            path_chooser: "/path_chooser" # Path selection decision output
+            gap_follower_toggle: "/gap_follower_toggle" # Gap follower enable/disable
+
+            # Safety and Monitoring Topics
+            safety_node: "/tmp/safety" # Safety system status input
+            object_detection: "/obj_detected" # Object detection output
+            object_detection_input: "/tmp/obj_detected" # Object detection input
+
+            # System Health Monitoring Topics
+            watchdog_critical: "/tmp/watchdog/critical" # Critical system watchdog
+            camera_watchdog: "/tmp/watchdog/camera_is_live" # Camera system health monitor
+
+        # ===========================================
+        # ROS COMMUNICATION SETTINGS
+        # ===========================================
+        queue_sizes:
+            publisher: 10 # Default queue size for all publishers
+            subscriber: 10 # Default queue size for all subscribers
+
+        # ===========================================
+        # PATH PLANNING CONFIGURATION
+        # ===========================================
+        path_decisions:
+            astar_path: "astar_path" # Message to activate A* path planning
+            optimized_path: "csv_race_path" # Message to activate optimized/CSV path following
+
+        # ===========================================
+        # SAFETY SYSTEM CONFIGURATION
+        # ===========================================
+        safety:
+            enable_emergency_stop: true # Enable emergency stop functionality
+            enable_safety_monitoring: true # Enable continuous safety monitoring
+            enable_watchdog_monitoring: true # Enable system health watchdog monitoring
+
+            # Emergency stop vehicle dynamics
+            emergency_stop:
+                speed: 0.0 # Target speed during emergency stop
+                steering_angle: 0.0 # Target steering angle during emergency stop
+                acceleration: 0.0 # Target acceleration during emergency stop
+                jerk: 0.0 # Target jerk during emergency stop
+                steering_angle_velocity: 0.0 # Target steering velocity during emergency stop
+
+        # ===========================================
+        # NODE-SPECIFIC CONFIGURATIONS
+        # ===========================================
+
+        # Pure Pursuit Controller Configuration
+        pure_pursuit:
+            default_frame_id: "base_link" # Default frame for control commands
+
+        # Object Detection Configuration
+        object_detection:
+            detection_threshold: 0.5 # Confidence threshold for object detection
+            publish_rate_hz: 10.0 # Rate to republish detection status
+
+        # Watchdog Configuration
+        watchdog:
+            timeout_threshold_ms: 1000 # Timeout threshold in milliseconds
+            health_check_rate_hz: 10.0 # Rate to check system health
+
+        # Gap Follower Configuration
+        gap_follower:
+            activation_delay_ms: 100 # Delay before gap follower activation
+
+        # ===========================================
+        # LOGGING AND DEBUGGING
+        # ===========================================
+        logging:
+            log_level: "INFO" # ROS logging level (DEBUG, INFO, WARN, ERROR)
+            enable_node_status_logging: true # Log individual node status changes
+            enable_performance_logging: false # Log execution timing information
